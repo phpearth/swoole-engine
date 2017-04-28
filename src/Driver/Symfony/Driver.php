@@ -11,9 +11,9 @@ use Symfony\Component\Debug\Debug;
  */
 class Driver
 {
-    private $kernel;
-    private $symfonyRequest;
-    private $symfonyResponse;
+    public $kernel;
+    public $symfonyRequest;
+    public $symfonyResponse;
 
     /**
      * Boot Symfony Application.
@@ -39,16 +39,11 @@ class Driver
      */
     public function preHandle()
     {
-        //resets Kernels startTime, so Symfony can correctly calculate the execution time
+        // Reset Kernel startTime, so Symfony can correctly calculate the execution time
         Accessor::set($this->kernel, 'startTime', microtime(true));
 
-        Accessor::call(function() {
-            // init bundles
-            $this->initializeBundles();
-
-            // init container
-            $this->initializeContainer();
-        }, $this->kernel);
+        $this->kernel->shutdown();
+        $this->kernel->boot();
     }
 
     /**
@@ -58,77 +53,7 @@ class Driver
      */
     public function postHandle()
     {
-        // Reset the stopwatch in debug toolbar in case it is used (development environment)
-        if ($this->kernel->getContainer()->has('debug.stopwatch')) {
-            $this->kernel->getContainer()->get('debug.stopwatch')->__construct();
-        }
-
-        // Resets profiler so the debug toolbar is visible in other requests as well.
-        if ($this->kernel->getContainer()->has('profiler')) {
-            $this->kernel->getContainer()->get('profiler')->enable();
-
-            // PropelLogger
-            if ($this->kernel->getContainer()->has('propel.logger')) {
-                $propelLogger = $this->kernel->getContainer()->get('propel.logger');
-                Accessor::set($propelLogger, 'queries', []);
-            }
-
-            // Doctrine\Bundle\DoctrineBundle\DataCollector\DoctrineDataCollector
-            if ($this->kernel->getContainer()->get('profiler')->has('db')) {
-                Accessor::call(function () {
-                    //$logger: \Doctrine\DBAL\Logging\DebugStack
-                    foreach ($this->loggers as $logger){
-                        Accessor::set($logger, 'queries', []);
-                    }
-                }, $this->kernel->getContainer()->get('profiler')->get('db'), null, 'Symfony\Bridge\Doctrine\DataCollector\DoctrineDataCollector');
-            }
-
-            // EventDataCollector
-            if ($this->kernel->getContainer()->get('profiler')->has('events')) {
-                Accessor::set($this->kernel->getContainer()->get('profiler')->get('events'), 'data', [
-                    'called_listeners' => [],
-                    'not_called_listeners' => [],
-                ]);
-            }
-
-            // TwigDataCollector
-            if ($this->kernel->getContainer()->get('profiler')->has('twig')) {
-                Accessor::call(function () {
-                    Accessor::set($this->profile, 'profiles', []);
-                }, $this->kernel->getContainer()->get('profiler')->get('twig'));
-            }
-
-            // Logger
-            if ($this->kernel->getContainer()->has('logger')) {
-                $logger = $this->kernel->getContainer()->get('logger');
-                Accessor::call(function () {
-                    if ($debugLogger = $this->getDebugLogger()) {
-                        //DebugLogger
-                        Accessor::set($debugLogger, 'records', []);
-                    }
-                }, $this->kernel->getContainer()->get('logger'));
-            }
-
-            // Symfony\Bundle\SwiftmailerBundle\DataCollector\MessageDataCollector
-            if ($this->kernel->getContainer()->hasParameter('swiftmailer.mailers')) {
-                $mailers = $this->kernel->getContainer()->getParameter('swiftmailer.mailers');
-                foreach ($mailers as $name => $mailer) {
-                    $loggerName = sprintf('swiftmailer.mailer.%s.plugin.messagelogger', $name);
-                    if ($this->kernel->getContainer()->has($loggerName)) {
-                        $logger = $this->kernel->getContainer()->get($loggerName);
-                        $logger->clear();
-                    }
-                }
-            }
-
-            // Symfony\Bridge\Swiftmailer\DataCollector\MessageDataCollector
-            if ($this->kernel->getContainer()->has('swiftmailer.plugin.messagelogger')) {
-                $logger = $this->kernel->getContainer()->get('swiftmailer.plugin.messagelogger');
-                $logger->clear();
-            }
-
-            $this->kernel->terminate($this->symfonyRequest, $this->symfonyResponse);
-        }
+        $this->kernel->terminate($this->symfonyRequest, $this->symfonyResponse);
     }
 
     /**
