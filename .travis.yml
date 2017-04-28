@@ -1,0 +1,12 @@
+language: php
+
+php:
+  - '7.1'
+  - nightly
+  - hhvm
+
+install:
+  - composer install
+
+script:
+    - vendor/bin/phpunit

@@ -1,0 +1,27 @@
+{
+    "name": "php-earth/swoole-engine",
+    "description": "Event-driven engine for running PHP with Swoole extension.",
+    "type": "library",
+    "require": {
+        "symfony/console": "^3.2",
+        "php": ">=7.1",
+        "ext-swoole": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.1"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "PHP.earth Contributors",
+            "homepage": "https://github.com/php-earth/swoole-engine/graphs/contributors"
+        }
+    ],
+    "autoload": {
+        "psr-4": {"PhpEarth\\Swoole\\": "src/"}
+    },
+    "autoload-dev": {
+        "psr-4": { "PhpEarth\\Swoole\\Tests\\": "tests/" }
+    },
+    "bin": ["bin/swoole"]
+}
