@@ -3,7 +3,9 @@ language: php
 php:
   - '7.1'
   - nightly
-  - hhvm
+
+before_script:
+  - pecl install swoole
 
 install:
   - composer install
