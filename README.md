@@ -12,8 +12,12 @@ composer require php-earth/swoole-engine
 
 ## Usage
 
+Currently supported frameworks:
+
+* Symfony:
+
 ```bash
-vendor/bin/swoole [--env=dev|prod] [--no-debug]
+vendor/bin/swoole [--env=dev|prod|...] [--host=IP] [--no-debug]
 ```
 
 ## License

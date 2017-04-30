@@ -2,44 +2,56 @@
 
 namespace PhpEarth\Swoole\Driver\Symfony;
 
-use Symfony\Component\HttpFoundation\Request as BaseRequest;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 
 class Request
 {
     /**
-     * Creates Symfony request from Swoole request
+     * Creates Symfony request from Swoole request. By default Swoole request
+     * contains headers with lower case keys and dash separator instead
+     * of underscores and upper case as PHP will expect later on in $_SERVER
+     * superglobal. For example:
+     * - host: localhost:9501
+     * - connection: keep-alive
+     * - accept-language: en-US,en;q=0.8,sl;q=0.6
+     * Also PHP superglobals must get set here.
      *
      * @param  \swoole_http_request $request
      * @return Request
      */
     public function createSymfonyRequest(\swoole_http_request $request) {
-        $_SERVER = isset($request->server) ? array_change_key_case($request->server, CASE_UPPER) : [];
-
-        if (isset($request->header)) {
-            $headers = [];
-            foreach ($request->header as $k => $v) {
-                $k = str_replace('-', '_', $k);
-                $headers['http_' . $k] = $v;
-            }
-            $_SERVER += array_change_key_case($headers, CASE_UPPER);
+        // $_SERVER
+        $headers = [];
+        foreach ($request->header as $key => $value) {
+            $key = str_replace('-', '_', $key);
+            $key = ucwords($key, '-');
+            $headers['http_' . $key] = $value;
         }
+        $_SERVER = array_merge($request->server, $headers);
+        // Also change possible remaining keys to uppercase
+        $_SERVER = array_change_key_case($_SERVER, CASE_UPPER);
+        $request->server = $_SERVER;
 
-        $_GET = isset($request->get) ? $request->get : [];
-        $_POST = isset($request->post) ? $request->post : [];
-        $_COOKIE = isset($request->cookie) ? $request->cookie : [];
-        $files = $request->files ?? [];
+        // Other superglobals
+        $_GET = $request->get ?? [];
+        $_POST = $request->post ?? [];
+        $_COOKIE = $request->cookie ?? [];
+        $_FILES = $request->files ?? [];
+        $content = $request->rawContent() ?: null;
 
-        $symfonyRequest = new BaseRequest(
+        $symfonyRequest = new SymfonyRequest(
             $_GET,
             $_POST,
             [],
             $_COOKIE,
-            $files,
-            $_SERVER
+            $_FILES,
+            $_SERVER,
+            $content
         );
+
         if (0 === strpos($symfonyRequest->headers->get('Content-Type'), 'application/json')) {
-            $data = json_decode($swRequest->rawContent(), true);
-            $symfonyRequest->request->replace(is_array($data) ? $data : array());
+            $data = json_decode($request->rawContent(), true);
+            $symfonyRequest->request->replace(is_array($data) ? $data : []);
         }
 
         return $symfonyRequest;

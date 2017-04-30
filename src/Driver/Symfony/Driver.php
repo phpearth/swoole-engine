@@ -6,6 +6,8 @@ use PhpEarth\Swoole\Driver\Symfony\Request;
 use PhpEarth\Swoole\Accessor;
 use Symfony\Component\Debug\Debug;
 
+use PhpEarth\Swoole\Driver\Symfony\SessionStorage;
+
 /**
  * Driver for running Symfony with Swoole.
  */
@@ -14,6 +16,9 @@ class Driver
     public $kernel;
     public $symfonyRequest;
     public $symfonyResponse;
+
+    private $swooleRequest;
+    private $swooleResponse;
 
     /**
      * Boot Symfony Application.
@@ -33,7 +38,28 @@ class Driver
     }
 
     /**
-     * Happens before each request.
+     * Set Swoole request.
+     *
+     * @param \swoole_http_request $request
+     */
+    public function setSwooleRequest(\swoole_http_request $request)
+    {
+        $this->swooleRequest = $request;
+    }
+
+    /**
+     * Set Swoole response.
+     *
+     * @param \swoole_http_response $response
+     */
+    public function setSwooleResponse(\swoole_http_response $response)
+    {
+        $this->swooleResponse = $response;
+    }
+
+    /**
+     * Happens before each request. We need to change session storage service in
+     * the middle of Kernel booting process.
      *
      * @return void
      */
@@ -42,8 +68,30 @@ class Driver
         // Reset Kernel startTime, so Symfony can correctly calculate the execution time
         Accessor::set($this->kernel, 'startTime', microtime(true));
 
-        $this->kernel->shutdown();
-        $this->kernel->boot();
+        $this->reloadSession();
+
+        Accessor::call(function() {
+            $this->initializeBundles();
+
+            $this->initializeContainer();
+        }, $this->kernel);
+
+        // Inject custom SessionStorage of Symfony Driver
+        $nativeStorage = new SessionStorage(
+            $this->kernel->getContainer()->getParameter('session.storage.options'),
+            $this->kernel->getContainer()->has('session.handler') ? $this->kernel->getContainer()->get('session.handler'): null,
+            $this->kernel->getContainer()->get('session.storage.metadata_bag')
+        );
+        $nativeStorage->swooleResponse = $this->swooleResponse;
+        $this->kernel->getContainer()->set('session.storage.native', $nativeStorage);
+
+        Accessor::call(function() {
+            foreach ($this->getBundles() as $bundle) {
+                $bundle->setContainer($this->container);
+                $bundle->boot();
+            }
+            $this->booted = true;
+        }, $this->kernel);
     }
 
     /**
@@ -57,31 +105,80 @@ class Driver
     }
 
     /**
-     * Transform Symfony request and response to Swoole response.
+     * Transform Symfony request and response to Swoole compatible response.
      *
-     * @param  \swoole_http_request  $request  Swoole request
-     * @param  \swoole_http_response $response Swoole response
      * @return void
      */
-    public function handle(\swoole_http_request $request, \swoole_http_response $response)
+    public function handle()
     {
         $rq = new Request();
-        $this->symfonyRequest = $rq->createSymfonyRequest($request);
+        $this->symfonyRequest = $rq->createSymfonyRequest($this->swooleRequest);
         $this->symfonyResponse = $this->kernel->handle($this->symfonyRequest);
 
-        foreach ($this->symfonyResponse->headers->getCookies() as $cookie) {
-            $response->header('Set-Cookie', $cookie);
+        // Manually create PHP session cookie. When running Swoole, PHP session_start()
+        // function cannot set PHP session cookie since there is no traditional
+        // header outputting.
+        if (!isset($this->swooleRequest->cookie[session_name()]) &&
+            $this->symfonyRequest->hasSession()
+        ) {
+            $params = session_get_cookie_params();
+            $this->swooleResponse->rawcookie(
+                $this->symfonyRequest->getSession()->getName(),
+                $this->symfonyRequest->getSession()->getId(),
+                $params['lifetime'] ? time() + $params['lifetime'] : null,
+                $params['path'],
+                $params['domain'],
+                $params['secure'],
+                $params['httponly']
+            );
         }
 
-        foreach ($this->symfonyResponse->headers as $name => $values) {
-            $name = implode('-', array_map('ucfirst', explode('-', $name)));
+        // HTTP status code for response
+        $this->swooleResponse->status($this->symfonyResponse->getStatusCode());
+
+        // Cookies
+        foreach ($this->symfonyResponse->headers->getCookies() as $cookie) {
+            $this->swooleResponse->rawcookie(
+                $cookie->getName(),
+                urlencode($cookie->getValue()),
+                $cookie->getExpiresTime(),
+                $cookie->getPath(),
+                $cookie->getDomain(),
+                $cookie->isSecure(),
+                $cookie->isHttpOnly()
+            );
+        }
+
+        // Headers
+        foreach ($this->symfonyResponse->headers->allPreserveCase() as $name => $values) {
+            //$name = implode('-', array_map('ucfirst', explode('-', $name)));
             foreach ($values as $value) {
-                $response->header($name, $value);
+                $this->swooleResponse->header($name, $value);
             }
         }
 
-        $response->end($this->symfonyResponse->getContent());
+        $this->swooleResponse->end($this->symfonyResponse->getContent());
+    }
 
-        return $response;
+    /**
+     * Fix for managing sessions with Swoole. On each request session_id needs to be
+     * regenerated, because we're running PHP script in CLI and listening for requests
+     * concurrently.
+     *
+     * @return void
+     */
+    private function reloadSession()
+    {
+        if (isset($this->swooleRequest->cookie[session_name()])) {
+            session_id($this->swooleRequest->cookie[session_name()]);
+        } else {
+            if (session_id()) {
+                session_id(\bin2hex(\random_bytes(32)));
+            }
+
+            // Empty global session array otherwise it is filled with values from
+            // previous session.
+            $_SESSION = [];
+        }
     }
 }
