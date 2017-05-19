@@ -80,7 +80,7 @@ class Driver
         $nativeStorage = new SessionStorage(
             $this->kernel->getContainer()->getParameter('session.storage.options'),
             $this->kernel->getContainer()->has('session.handler') ? $this->kernel->getContainer()->get('session.handler'): null,
-            $this->kernel->getContainer()->get('session.storage.metadata_bag')
+            $this->kernel->getContainer()->get('session.storage')->getMetadataBag()
         );
         $nativeStorage->swooleResponse = $this->swooleResponse;
         $this->kernel->getContainer()->set('session.storage.native', $nativeStorage);
