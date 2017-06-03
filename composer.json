@@ -3,7 +3,7 @@
     "description": "Event-driven engine for running PHP with Swoole extension.",
     "type": "library",
     "require": {
-        "symfony/console": "^3.2",
+        "symfony/console": "^3.3",
         "php": ">=7.1",
         "ext-swoole": "*"
     },

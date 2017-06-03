@@ -28,7 +28,7 @@ class Driver
      */
     public function boot($env = 'dev', $debug = true)
     {
-        $loader = require __DIR__.'/../../../../../../app/autoload.php';
+        $loader = require __DIR__.'/../../../../../../vendor/autoload.php';
 
         if ($debug) {
             Debug::enable();
