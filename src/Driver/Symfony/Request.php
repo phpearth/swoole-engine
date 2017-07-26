@@ -68,6 +68,7 @@ class Request
             'HTTP_ACCEPT_LANGUAGE',
             'HTTP_REFERER',
             'HTTP_ACCEPT_CHARSET',
+            'HTTP_X_REQUESTED_WITH',
         ];
 
         foreach ($request->header as $key => $value) {
