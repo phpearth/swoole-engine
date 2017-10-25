@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file. This projec
 
 * ...
 
+## [v0.0.3] 2017-10-25
+
+* Support for Symfony Flex
+
 ## [v0.0.2] 2017-07-26
 
 * Add HTTP_X_REQUESTED_WITH header to whitelist

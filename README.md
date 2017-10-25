@@ -29,5 +29,5 @@ For more information, read the [documentation](docs):
 
 ## License
 
-[Contributions](CONTRIBUTING.md) are most welcome. This repository is released
-under the [MIT license](LICENSE).
+[Contributions](docs/CONTRIBUTING.md) are most welcome. This repository is
+released under the [MIT license](LICENSE).

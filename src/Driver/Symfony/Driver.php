@@ -34,7 +34,13 @@ class Driver
             Debug::enable();
         }
 
-        $this->kernel = new \AppKernel($env, $debug);
+        if (class_exists('\AppKernel')) {
+            // Previous Symfony
+            $this->kernel = new \AppKernel($env, $debug);
+        } else {
+            // Symfony Flex
+            $this->kernel = new \App\Kernel($env, $debug);
+        }
     }
 
     /**
@@ -76,14 +82,16 @@ class Driver
             $this->initializeContainer();
         }, $this->kernel);
 
-        // Inject custom SessionStorage of Symfony Driver
-        $nativeStorage = new SessionStorage(
-            $this->kernel->getContainer()->getParameter('session.storage.options'),
-            $this->kernel->getContainer()->has('session.handler') ? $this->kernel->getContainer()->get('session.handler'): null,
-            $this->kernel->getContainer()->get('session.storage')->getMetadataBag()
-        );
-        $nativeStorage->swooleResponse = $this->swooleResponse;
-        $this->kernel->getContainer()->set('session.storage.native', $nativeStorage);
+        if ($this->kernel->getContainer()->has('session')) {
+            // Inject custom SessionStorage of Symfony Driver
+            $nativeStorage = new SessionStorage(
+                $this->kernel->getContainer()->getParameter('session.storage.options'),
+                $this->kernel->getContainer()->has('session.handler') ? $this->kernel->getContainer()->get('session.handler'): null,
+                $this->kernel->getContainer()->get('session.storage')->getMetadataBag()
+            );
+            $nativeStorage->swooleResponse = $this->swooleResponse;
+            $this->kernel->getContainer()->set('session.storage.native', $nativeStorage);
+        }
 
         Accessor::call(function() {
             foreach ($this->getBundles() as $bundle) {
