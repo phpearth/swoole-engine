@@ -109,6 +109,11 @@ class Driver
      */
     public function postHandle()
     {
+        //close mysql connection.
+        $this->kernel->getContainer()->get('doctrine.orm.entity_manager')->clear();
+        $this->kernel->getContainer()->get('doctrine.orm.entity_manager')->close();
+        $this->kernel->getContainer()->get('doctrine.orm.entity_manager')->getConnection()->close();
+
         $this->kernel->terminate($this->symfonyRequest, $this->symfonyResponse);
     }
 
