@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file. This projec
 
 * ...
 
+## [v0.0.4] 2017-11-21
+
+* Close DB connection to avoid too many connections error
+
 ## [v0.0.3] 2017-10-25
 
 * Support for Symfony Flex
