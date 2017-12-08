@@ -57,29 +57,13 @@ class Request
     {
         $headers = [];
 
-        // For just in case security we'll whitelist the expected headers. No more,
-        // should be added to $_SERVER.
-        $whitelist = [
-            'HTTP_HOST',
-            'HTTP_CONNECTION',
-            'HTTP_USER_AGENT',
-            'HTTP_ACCEPT',
-            'HTTP_ACCEPT_ENCODING',
-            'HTTP_ACCEPT_LANGUAGE',
-            'HTTP_REFERER',
-            'HTTP_ACCEPT_CHARSET',
-            'HTTP_X_REQUESTED_WITH',
-        ];
-
         foreach ($request->header as $key => $value) {
             if ($key == 'x-forwarded-proto' && $value == 'https') {
                 $request->server['HTTPS'] = 'on';
             }
 
             $headerKey = 'HTTP_' . strtoupper(str_replace('-', '_', $key));
-            if (in_array($headerKey, $whitelist)) {
-                $headers[$headerKey] = $value;
-            }
+            $headers[$headerKey] = $value;
         }
 
         // Make swoole's server's keys uppercased and merge them into the $_SERVER superglobal
