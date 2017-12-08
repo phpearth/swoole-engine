@@ -2,11 +2,12 @@
 
 namespace PhpEarth\Swoole\Driver\Symfony;
 
+use App\Kernel;
 use PhpEarth\Swoole\Driver\Symfony\Request;
 use PhpEarth\Swoole\Accessor;
-use Symfony\Component\Debug\Debug;
-
 use PhpEarth\Swoole\Driver\Symfony\SessionStorage;
+use Symfony\Component\Debug\Debug;
+use Symfony\Component\Dotenv\Dotenv;
 
 /**
  * Driver for running Symfony with Swoole.
@@ -20,6 +21,8 @@ class Driver
     private $swooleRequest;
     private $swooleResponse;
 
+    private $projectDir = __DIR__.'/../../../../../..';
+
     /**
      * Boot Symfony Application.
      *
@@ -28,13 +31,23 @@ class Driver
      */
     public function boot($env = 'dev', $debug = true)
     {
-        $loader = require __DIR__.'/../../../../../../vendor/autoload.php';
+        $loader = require $this->projectDir.'/vendor/autoload.php';
 
-        if ($debug) {
+        // The check is to ensure we don't use .env in production
+        if (!isset($_SERVER['APP_ENV'])) {
+            if (!class_exists(Dotenv::class)) {
+                throw new \RuntimeException('APP_ENV environment variable is not defined. You need to define environment variables for configuration or add "symfony/dotenv" as a Composer dependency to load variables from a .env file.');
+            }
+            (new Dotenv())->load($this->projectDir.'/.env');
+        }
+
+        if ($_SERVER['APP_DEBUG'] ?? ('prod' !== ($_SERVER['APP_ENV'] ?? 'dev'))) {
+            umask(0000);
+
             Debug::enable();
         }
 
-        $this->kernel = new \App\Kernel($env, $debug);
+        $this->kernel = new Kernel($_SERVER['APP_ENV'] ?? 'dev', $_SERVER['APP_DEBUG'] ?? ('prod' !== ($_SERVER['APP_ENV'] ?? 'dev')));
     }
 
     /**
