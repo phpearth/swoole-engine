@@ -34,13 +34,7 @@ class Driver
             Debug::enable();
         }
 
-        if (class_exists('\AppKernel')) {
-            // Previous Symfony
-            $this->kernel = new \AppKernel($env, $debug);
-        } else {
-            // Symfony Flex
-            $this->kernel = new \App\Kernel($env, $debug);
-        }
+        $this->kernel = new \App\Kernel($env, $debug);
     }
 
     /**
