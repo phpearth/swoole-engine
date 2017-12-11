@@ -1,11 +1,9 @@
 # Introduction
 
-## Reference, documentation, tutorials, examples for Swoole.
+Swoole is event-driven PHP extension with HTTP server, websocket server,
 
-Swoole is event-driven PHP extension with http server, websocket server,
-
-Swoole is an event-driven, asynchronous, concurrent networking communication engine
-with high performance PHP extension written in C language.
+Swoole is an event-driven, asynchronous, concurrent networking communication
+engine with high performance PHP extension written in C language.
 
 It includes components for different purposes: TCP/UDP Server and Client, Task
 Worker, Database Connection Pooling, Millisecond Timer, Event, Async IO, Async
@@ -14,7 +12,7 @@ Requiring.
 
 Prononuced s+wall - `/swəʊl/`.
 
-## Swoole Installation
+## Swoole installation
 
 Installation can be done with PECL as any other PHP extension:
 
