@@ -21,6 +21,17 @@ class Accessor
     }
 
     /**
+     * Get private or protected property of given object.
+     *
+     * @param object $object Object for which property needs to be accessed.
+     * @param string $property Property name
+     */
+    public static function get($object, $property)
+    {
+        return (function() use ($property) { return $this->$property; })->bindTo($object, $object)();
+    }
+
+    /**
      * Binds callable for calling private and protected methods.
      *
      * @param  callable $callable
