@@ -48,7 +48,7 @@ class Driver
         }
 
         $this->kernel = new Kernel($_SERVER['APP_ENV'] ?? 'dev', $_SERVER['APP_DEBUG'] ?? ('prod' !== ($_SERVER['APP_ENV'] ?? 'dev')));
-        //$this->kernel->boot();
+        $this->kernel->boot();
     }
 
     /**
@@ -85,21 +85,6 @@ class Driver
         }
 
         $this->reloadSession();
-
-        $this->kernel->boot();
-
-        return;
-
-        if ($this->kernel->getContainer()->has('session')) {
-            // Inject custom SessionStorage of Symfony Driver
-            $nativeStorage = new SessionStorage(
-                $this->kernel->getContainer()->getParameter('session.storage.options'),
-                $this->kernel->getContainer()->has('session.handler') ? $this->kernel->getContainer()->get('session.handler'): null,
-                $this->kernel->getContainer()->get('session.storage')->getMetadataBag()
-            );
-            $nativeStorage->swooleResponse = $this->swooleResponse;
-            $this->kernel->getContainer()->set('session.storage.native', $nativeStorage);
-        }
 
         Accessor::call(function() {
             $this->initializeBundles();
