@@ -39,7 +39,7 @@ class ServerCommand extends Command
 
         $this->driver->boot($input->getOption('env'), $debug);
 
-        $http->on('request', function(\swoole_http_request $request, \swoole_http_response $response) use($output) {
+        $http->on('request', function(\swoole_http_request $request, \swoole_http_response $response) use($output, $debug) {
             $this->driver->setSwooleRequest($request);
             $this->driver->setSwooleResponse($response);
 
@@ -47,7 +47,9 @@ class ServerCommand extends Command
             $this->driver->handle();
             $this->driver->postHandle();
 
-            $output->writeln($this->driver->symfonyRequest->getPathInfo());
+            if ($debug) {
+                $output->writeln($this->driver->symfonyRequest->getPathInfo());
+            }
         });
 
         $output->writeln('Swoole HTTP Server started on '.$input->getOption('host').':'.$input->getOption('port'));
