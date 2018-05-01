@@ -47,7 +47,9 @@ class ServerCommand extends Command
             $this->driver->handle();
             $this->driver->postHandle();
 
-            $output->writeln($this->driver->symfonyRequest->getPathInfo());
+            if ($debug) {
+                $output->writeln($this->driver->symfonyRequest->getPathInfo());
+            }
         });
 
         $output->writeln('Swoole HTTP Server started on '.$input->getOption('host').':'.$input->getOption('port'));
