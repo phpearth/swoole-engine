@@ -39,7 +39,7 @@ class ServerCommand extends Command
 
         $this->driver->boot($input->getOption('env'), $debug);
 
-        $http->on('request', function(\swoole_http_request $request, \swoole_http_response $response) use($output) {
+        $http->on('request', function(\swoole_http_request $request, \swoole_http_response $response) use($output, $debug) {
             $this->driver->setSwooleRequest($request);
             $this->driver->setSwooleResponse($response);
 
